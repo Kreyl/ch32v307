@@ -1,0 +1,13 @@
+eclipse.preferences.version=1
+encoding//MCU/ch32v30x.h=GBK
+encoding//MCU/core_riscv.c=GBK
+encoding//MCU/core_riscv.h=GBK
+encoding//MCU/startup_ch32v30x_D8C.S=GBK
+encoding//Release/v307tst.map=GBK
+encoding//kl_lib/libCH32V30x.cpp=UTF-8
+encoding//kl_lib/libCH32V30x.h=UTF-8
+encoding//kl_lib/uart.cpp=UTF-8
+encoding//kl_lib/uart.h=UTF-8
+encoding/CH32V307RC.ld=GBK
+encoding/board.h=GBK
+encoding/main.cpp=GBK
