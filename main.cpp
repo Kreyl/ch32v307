@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include "libCH32V30x.h"
 #include "uart.h"
+//#include "Neopix.h"
 
 #if 1 // ======================== Variables and defines ========================
 // Forever
@@ -43,6 +44,8 @@ int main() {
 	Printf("\r%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
 	Clk::PrintFreqs();
 	Printf(Clk::IsHSEReady()? "Crystal ok\r" : "Crystal FAIL\r");
+	Flash::PrintOptionBytesState();
+	Flash::SetCodeRamMode(Flash::codemode192_128);
 
 	Gpio::SetupOut(GPIOA, 8, Gpio::outmodePushPull);
 

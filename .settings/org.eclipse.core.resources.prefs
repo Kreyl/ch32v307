@@ -9,5 +9,7 @@ encoding//kl_lib/libCH32V30x.h=UTF-8
 encoding//kl_lib/uart.cpp=UTF-8
 encoding//kl_lib/uart.h=UTF-8
 encoding/CH32V307RC.ld=GBK
+encoding/Neopix.cpp=GBK
+encoding/Neopix.h=GBK
 encoding/board.h=GBK
 encoding/main.cpp=GBK

@@ -260,6 +260,104 @@ void SetupAlterFunc(
 
 
 namespace Flash { // ======================== Flash ============================
+#define FLASH_OPTB0_ADDR    0x1FFFF800
+#define FLASH_OPTB1_ADDR    0x1FFFF804
+#define FLASH_OPTB2_ADDR    0x1FFFF808
+#define FLASH_OPTB3_ADDR    0x1FFFF80C
+
+#define FLASH_ProgramTimeout    9999999 // around 10ms
+
+
+uint32_t GetOptionBytes0() { return *(uint32_t*)FLASH_OPTB0_ADDR; }
+uint32_t GetOptionBytes1() { return *(uint32_t*)FLASH_OPTB1_ADDR; }
+uint32_t GetOptionBytes2() { return *(uint32_t*)FLASH_OPTB2_ADDR; }
+uint32_t GetOptionBytes3() { return *(uint32_t*)FLASH_OPTB3_ADDR; }
+
+void PrintOptionBytesState() {
+    uint32_t OptionBytes = Flash::GetOptionBytes0();
+//    Printf("0x%X\r", OptionBytes);
+    if((OptionBytes & 0xFFFFUL) == 0x5AA5) Printf("No Read Protection\r");
+    else Printf("Read Protection En\r");
+    uint32_t CodeMod = (OptionBytes >> 22) & 0b11UL;
+    switch(CodeMod) {
+        case 0b00: Printf("Code 192KB + RAM 128KB\r"); break;
+        case 0b01: Printf("Code 224KB + RAM 96 KB\r"); break;
+        case 0b10: Printf("Code 256KB + RAM 64 KB\r"); break;
+        case 0b11: Printf("Code 288KB + RAM 32 KB\r"); break;
+        default: break;
+    }
+}
+
+static void ClearFlags() { FLASH->STATR = FLASH_STATR_EOP | FLASH_STATR_WRPRTERR; }
+
+// Wait for a Flash operation to complete or a TIMEOUT to occur
+static uint8_t WaitForLastOperation(uint32_t Timeout = FLASH_ProgramTimeout) {
+    uint32_t t = Timeout;
+    while(FLASH->STATR & FLASH_STATR_BSY)
+        if(t-- == 0) return retvTimeout;
+    if(FLASH->STATR & (FLASH_STATR_WRPRTERR | FLASH_STATR_PGERR)) return retvFail;
+    // Clear EOP if set
+    if(FLASH->CTLR & FLASH_STATR_EOP) FLASH->CTLR |= FLASH_STATR_EOP;
+    return retvOk;
+}
+
+static void LockFlash() {
+    WaitForLastOperation();
+    FLASH->CTLR |= FLASH_CTLR_LOCK;
+}
+
+static void UnlockFlash() {
+    __disable_irq();
+    FLASH->KEYR = 0x45670123;
+    FLASH->KEYR = 0xCDEF89AB;
+    __enable_irq();
+}
+
+static void LockOptionBytes() {
+    WaitForLastOperation();
+    FLASH->CTLR &= ~FLASH_CTLR_OPTWRE;
+}
+
+static void UnlockOptionBytes() {
+    __disable_irq();
+    FLASH->OBKEYR = 0x45670123;
+    FLASH->OBKEYR = 0xCDEF89AB;
+    __enable_irq();
+}
+
+void WriteOptionBytes(uint32_t Addr, uint32_t Value) {
+    // Flash freq must not be greater than 60 MHz
+//    if(Clk::AHBFreqHz > 60000000) FLASH->CTLR &= ~(1UL << 25);
+    ClearFlags();
+    if(FLASH->CTLR & FLASH_CTLR_LOCK) {
+        UnlockFlash();
+        if(WaitForLastOperation() != retvOk) goto End;
+    }
+    if((FLASH->CTLR & FLASH_CTLR_OPTWRE) == 0) {
+        UnlockOptionBytes();
+        if(WaitForLastOperation() != retvOk) goto End;
+    }
+    FLASH->CTLR |= FLASH_CTLR_OPTPG;
+    FLASH->CTLR |= FLASH_CTLR_STRT;
+    // Program two uint16
+    *(volatile uint16_t*)Addr = (Value >> 0) & 0xFFFF;
+    if(WaitForLastOperation() != retvOk) goto End;
+    Addr += 2;
+    *(volatile uint16_t*)Addr = (Value >> 16) & 0xFFFF;
+    if(WaitForLastOperation() != retvOk) goto End;
+    End:
+    LockOptionBytes();
+    LockFlash();
+}
+
+// Will not touch FLASH if already set as required
+void SetCodeRamMode(CodeRamMode_t CodeMode) {
+    uint32_t OptionBytes = Flash::GetOptionBytes0();
+    uint32_t OptionBytesRequired = (OptionBytes & 0x3F3FFFFFUL) | ((uint32_t)CodeMode << 22) | ((~(uint32_t)CodeMode) << 30);
+    if(OptionBytes == OptionBytesRequired) return;
+    WriteOptionBytes(FLASH_OPTB0_ADDR, OptionBytesRequired); // Program new value
+    PrintOptionBytesState();
+}
 
 //void EnablePrefetch() { FLASH->ACTLR |= FLASH_ACTLR_PRFTBE; }
 //

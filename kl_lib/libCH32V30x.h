@@ -323,7 +323,16 @@ static inline void DelayLoop(volatile uint32_t ACounter) { while(ACounter--); }
 
 
 namespace Flash { // ======================== Flash ============================
-// Flash freq must not be greater than 60 MHz
+
+uint32_t GetOptionBytes0();
+uint32_t GetOptionBytes1();
+uint32_t GetOptionBytes2();
+uint32_t GetOptionBytes3();
+void PrintOptionBytesState();
+
+enum CodeRamMode_t { codemode192_128=0b00, codemode224_96=0b01, codemode256_64=0b10, codemode288_32=0b11 };
+void SetCodeRamMode(CodeRamMode_t CodeMode);
+
 
 //void EnableEnhancedReadMode();
 
