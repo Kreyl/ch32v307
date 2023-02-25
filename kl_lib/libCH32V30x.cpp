@@ -149,6 +149,21 @@ DMA2EXT_IRQ_HANDLER(11);
 } // extern C
 #endif
 
+#if 1 // ============================= Timer ===================================
+void Timer_t::Init() const {
+    if     (ITmr == TIM1)   { RCC->APB2PCENR |= 1UL << 11; }
+    else if(ITmr == TIM2)   { RCC->APB1PCENR |= 1UL << 0; }
+    else if(ITmr == TIM3)   { RCC->APB1PCENR |= 1UL << 1; }
+    else if(ITmr == TIM4)   { RCC->APB1PCENR |= 1UL << 2; }
+    else if(ITmr == TIM5)   { RCC->APB1PCENR |= 1UL << 3; }
+    else if(ITmr == TIM6)   { RCC->APB1PCENR |= 1UL << 4; }
+    else if(ITmr == TIM7)   { RCC->APB1PCENR |= 1UL << 5; }
+    else if(ITmr == TIM8)   { RCC->APB2PCENR |= 1UL << 13; }
+    else if(ITmr == TIM9)   { RCC->APB2PCENR |= 1UL << 19; }
+    else if(ITmr == TIM10)  { RCC->APB2PCENR |= 1UL << 20; }
+}
+#endif
+
 namespace Gpio { // =================== Gpio ========================
 
 static void ClockEnable(const GPIO_TypeDef *PGpioPort) {
@@ -259,6 +274,47 @@ namespace Flash { // ======================== Flash ============================
 
 
 namespace Clk { // ===================== Clocking ==============================
+
+uint8_t EnableHSE() {
+    RCC->CTLR |= RCC_HSEON;
+    for(volatile uint32_t i=0; i<9000; i++) {
+        if(RCC->CTLR & RCC_HSERDY) return retvOk;
+    }
+    RCC->CTLR &= ~RCC_HSEON;
+    return retvFail;
+}
+
+uint8_t EnablePll() {
+    RCC->CTLR |= RCC_PLLON;
+    for(volatile uint32_t i=0; i<9000; i++) {
+        if(RCC->CTLR & RCC_PLLRDY) return retvOk;
+    }
+    RCC->CTLR &= ~RCC_PLLON;
+    return retvFail;
+}
+
+bool IsHSEReady() { return (RCC->CTLR & RCC_HSERDY); }
+
+void SetupPll(Pll1Mul_t PllMul1, PllSrc_t PllSrc, Prediv_t Prediv, Prediv1Src_t Prediv1Src) {
+    uint32_t cfgr0 = RCC->CFGR0 & ~(RCC_PLLMULL | RCC_PLLXTPRE | RCC_PLLSRC);
+    cfgr0 |= (uint32_t)PllMul1 << 18;
+    if(PllSrc == pllSrcHSI) EXTEN->EXTEN_CTR |= EXTEN_PLL_HSI_PRE;
+    else if(PllSrc == pllSrcHSIdiv2) EXTEN->EXTEN_CTR &= ~EXTEN_PLL_HSI_PRE;
+    else { // Prediv1
+        cfgr0 |= RCC_PLLSRC;
+        RCC->CFGR2 = (RCC->CFGR2 & 0xFFFEFFF0) | (uint32_t)Prediv | (uint32_t)Prediv1Src;
+    }
+    RCC->CFGR0 = cfgr0;
+}
+
+void SelectSysClkSrc(ClkSrc_t ClkSrc) {
+    RCC->CFGR0 = (RCC->CFGR0 & ~RCC_SW) | (uint32_t)ClkSrc;
+    for(volatile uint32_t i=0; i<9000; i++) {
+        if(((RCC->CFGR0  >> 2) & RCC_SW) == (uint32_t)ClkSrc) return;
+    }
+    RCC->CFGR0 &= ~RCC_SW; // Back to HSI
+}
+
 static const uint32_t PllMul_x2_Tbl[16] = {36, 6,8,10,12,14,16,18,20,22,24,26,28, 13, 30,32};
 static const uint32_t Pll2Mul_x2_Tbl[16] = {5,25,8,10,12,14,16,18,20,22,24,26,28,30,32,40};
 static const uint32_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};

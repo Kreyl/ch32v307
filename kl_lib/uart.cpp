@@ -58,8 +58,8 @@ void BaseUart_t::IStartTransmissionIfNotYet() {
 
 void BaseUart_t::Init() {
     // ==== TX ====
-    Gpio::SetupAlterFunc(GPIOA, Params->PinTx, Gpio::omPushPull);
-    Gpio::SetupAlterFunc(Params->PGpioTx, Params->PinTx, Gpio::omPushPull, Gpio::ps50MHz);
+    Gpio::SetupAlterFunc(GPIOA, Params->PinTx, Gpio::outmodePushPull);
+    Gpio::SetupAlterFunc(Params->PGpioTx, Params->PinTx, Gpio::outmodePushPull, Gpio::speed50MHz);
 
     // ==== Clock ====
     if     (Params->Uart == USART1) { RCC->APB2PCENR |= RCC_USART1EN; /*IUart1 = this; */}
