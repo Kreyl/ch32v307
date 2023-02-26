@@ -1,18 +1,16 @@
 /*
  * shell.h
  *
- *  Created on: 25 ���. 2015 �.
  *      Author: Kreyl
  */
 
 #pragma once
 
 #include <libCH32V30x.h>
-#include <cstring>
 #include <stdarg.h>
 #include "board.h"
 //#include "color.h"
-//#include "kl_string.h"
+#include "kl_string.h"
 /*
 #define DELIMITERS              " ,"
 #define PREV_CHAR_TIMEOUT_ms    99UL

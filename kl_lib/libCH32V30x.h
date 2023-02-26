@@ -21,12 +21,15 @@ typedef void (*ftVoidPVoidW32)(void*p, uint32_t W32);
 
 void Printf(const char *format, ...);
 
+extern "C"
+void PrintfC(const char *format, ...);
+
 #ifndef countof
 #define countof(A)  (sizeof(A)/sizeof(A[0]))
 #endif
 
 // IRQ priorities: smaller value is higher prio. Top 4 bits are utilized here.
-#define IRQ_PRIO_LOW            0xF0 // Minimum prio
+#define IRQ_PRIO_LOWEST         0xF0 // Minimum prio
 #define IRQ_PRIO_MEDIUM         0x90
 #define IRQ_PRIO_HIGH           0x40
 #define IRQ_PRIO_VERYHIGH       0x00 // Top prio
@@ -361,9 +364,8 @@ enum Pll23Mul_t {
     pll23mul14=0xC, pll23mul15=0xD, pll23mul16=0xE, pll23mul20=0xF
 };
 
-
 // Frequency values
-extern uint32_t AHBFreqHz, APB1FreqHz, APB2FreqHz;
+extern uint32_t SysClkHz, AHBFreqHz, APB1FreqHz, APB2FreqHz;
 
 // Enable / Disable
 uint8_t EnableHSE();

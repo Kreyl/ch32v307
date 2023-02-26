@@ -1,7 +1,6 @@
 /*
  * shell.cpp
  *
- *  Created on: 21 ���. 2017 �.
  *      Author: Kreyl
  */
 
@@ -152,12 +151,13 @@ void PrintfHelper_t::IVsPrintf(const char *format, va_list args) {
             case 's':
             case 'S': {
                 char *s = va_arg(args, char*);
-                width -= strlen(s); // Do padding of string
+                width -= kl_strlen(s); // Do padding of string
                 while(s and *s)    { if(IPutChar(*s++)   != retvOk) goto End; }
                 while(width-- > 0) { if(IPutChar(filler) != retvOk) goto End; } // Do padding of string
             }
             break;
 
+            case 'x':
             case 'X':
                 if(IPutUint(va_arg(args, uint32_t), 16, width, filler) != retvOk) goto End;
                 break;

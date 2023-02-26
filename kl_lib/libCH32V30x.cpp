@@ -6,13 +6,13 @@
  */
 
 #include <libCH32V30x.h>
-
+#include "FreeRTOSConfig.h"
 
 #if 1 // ============================== DMA ====================================
 struct DmaIrqHandler_t {
     ftVoidPVoidW32 Handler = nullptr;
     void *Param = nullptr;
-    uint32_t Prio = IRQ_PRIO_LOW;
+    uint32_t Prio = IRQ_PRIO_LOWEST;
 };
 
 static DmaIrqHandler_t DmaIrqHandler[DMA_CHNL_CNT];
@@ -258,7 +258,6 @@ void SetupAlterFunc(
 
 } // namespace gpio
 
-
 namespace Flash { // ======================== Flash ============================
 #define FLASH_OPTB0_ADDR    0x1FFFF800
 #define FLASH_OPTB1_ADDR    0x1FFFF804
@@ -370,7 +369,6 @@ void SetCodeRamMode(CodeRamMode_t CodeMode) {
 
 } // Flash
 
-
 namespace Clk { // ===================== Clocking ==============================
 
 uint8_t EnableHSE() {
@@ -419,10 +417,9 @@ static const uint32_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6
 static const uint32_t APBPrescTable[8] = {0, 0, 0, 0, 1, 2, 3, 4};
 
 // Frequency values
-uint32_t AHBFreqHz, APB1FreqHz, APB2FreqHz;
+uint32_t SysClkHz, AHBFreqHz, APB1FreqHz, APB2FreqHz;
 
 void UpdateFreqValues() {
-    uint32_t SysClkHz;
     // Figure out SysClk
     uint32_t tmp = (RCC->CFGR0 & RCC_SWS) >> 2;
     switch(tmp) {
@@ -471,8 +468,20 @@ void UpdateFreqValues() {
 }
 
 void PrintFreqs() {
-    Printf("AHBFreq=%uMHz; APB1Freq=%uMHz; APB2Freq=%uMHz\r",
-            AHBFreqHz/1000000, APB1FreqHz/1000000, APB2FreqHz/1000000);
+    Printf("SysClk=%uMHz; AHBFreq=%uMHz; APB1Freq=%uMHz; APB2Freq=%uMHz\r",
+            SysClkHz/1000000, AHBFreqHz/1000000, APB1FreqHz/1000000, APB2FreqHz/1000000);
 }
 
 } // clocking
+
+extern "C"
+void vPortSetupTimerInterrupt(void) {
+    NVIC_SetPriority(Software_IRQn, IRQ_PRIO_LOWEST);
+    NVIC_SetPriority(SysTicK_IRQn, IRQ_PRIO_LOWEST);
+
+    SysTick->CTLR= 0;
+    SysTick->SR  = 0;
+    SysTick->CNT = 0;
+    SysTick->CMP = Clk::SysClkHz / configTICK_RATE_HZ;
+    SysTick->CTLR= 0b1111UL; // Upcount, Set to 0 at compare, clk is HCLK (not HCLK/8), IRQ en, counter en
+}
